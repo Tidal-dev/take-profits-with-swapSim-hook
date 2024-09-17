@@ -22,6 +22,8 @@ import {TickMath} from "v4-core/libraries/TickMath.sol";
 // Our contracts
 import {TakeProfitsHook} from "../src/TakeProfitsHook.sol";
 
+import "forge-std/console.sol";
+
 contract TakeProfitsHookTest is Test, Deployers {
     // Use the libraries
     using StateLibrary for IPoolManager;
@@ -346,6 +348,40 @@ contract TakeProfitsHookTest is Test, Deployers {
         assertEq(tokensLeftToSell, 0);
 
         tokensLeftToSell = hook.pendingOrders(key.toId(), 60, true);
+        assertEq(tokensLeftToSell, 0);
+    }
+    
+    function test_manyOrders_zeroForOne() public {
+        PoolSwapTest.TestSettings memory testSettings = PoolSwapTest
+            .TestSettings({takeClaims: false, settleUsingBurn: false});
+
+        // Setup two zeroForOne orders at ticks 0 and 60
+        uint256 amount = 0.01 ether;
+
+        for(int24 i = 0; i < 400; i++){
+            hook.placeOrder(key, i * 60, true, amount);
+        }
+
+        // Do a swap to make tick increase
+        IPoolManager.SwapParams memory params = IPoolManager.SwapParams({
+            zeroForOne: false,
+            amountSpecified: -10 ether,
+            sqrtPriceLimitX96: TickMath.MAX_SQRT_PRICE - 1
+        });
+
+        uint256 initialGas = gasleft();
+
+        swapRouter.swap(key, params, testSettings, ZERO_BYTES);
+
+        console.log("gas used : ", initialGas - gasleft());
+
+        uint256 tokensLeftToSell = hook.pendingOrders(key.toId(), 0, true);
+        assertEq(tokensLeftToSell, 0);
+
+        tokensLeftToSell = hook.pendingOrders(key.toId(), 660, true);
+        assertEq(tokensLeftToSell, 0);
+        
+        tokensLeftToSell = hook.pendingOrders(key.toId(), 720, true);
         assertEq(tokensLeftToSell, 0);
     }
 }
