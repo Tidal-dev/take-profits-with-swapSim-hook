@@ -18,6 +18,7 @@ import {TickMath} from "v4-core/libraries/TickMath.sol";
 import {BalanceDelta} from "v4-core/types/BalanceDelta.sol";
 
 import {FixedPointMathLib} from "solmate/src/utils/FixedPointMathLib.sol";
+import "forge-std/console.sol";
 
 contract TakeProfitsHook is BaseHook, ERC1155 {
     using StateLibrary for IPoolManager;
@@ -313,6 +314,7 @@ contract TakeProfitsHook is BaseHook, ERC1155 {
                     : TickMath.MAX_SQRT_PRICE - 1
             })
         );
+        console.log("tick executed : ", tick);
 
         // `inputAmount` has been deducted from this position
         pendingOrders[key.toId()][tick][zeroForOne] -= inputAmount;

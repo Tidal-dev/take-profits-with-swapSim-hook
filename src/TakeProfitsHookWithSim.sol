@@ -110,14 +110,6 @@ contract TakeProfitsHookWithSim is BaseHook, ERC1155 {
 // console.log("token0Balance init : ", key.currency0.balanceOf(address(this)));
 // console.log("token1Balance init : ", key.currency1.balanceOf(address(this)));
 
-        // SwapSim.SwapParams memory simParams = SwapSim.SwapParams({
-        //     zeroForOne: params.zeroForOne,
-        //     amountSpecified: params.amountSpecified,
-        //     sqrtPriceLimitX96: params.sqrtPriceLimitX96,
-        //     tickSpacing: key.tickSpacing,
-        //     poolId: key.toId()
-        // });
-
         (BalanceDelta userDeltaToHook, SwapSim.SwapState memory state) = poolManager.swapSim(
             SwapSim.SwapParams({
                 zeroForOne: params.zeroForOne,
@@ -159,14 +151,11 @@ contract TakeProfitsHookWithSim is BaseHook, ERC1155 {
                 ""
             );
 
-            // userDeltaToHook = sub(hookDeltaToPM, userDeltaToHook);
-            // console.log("hookDeltaToPM : ", hookDeltaToPM.amount0());
-            // console.log("hookDeltaToPM : ", hookDeltaToPM.amount1());
             // Return skipped gas fees to LPs
             uint256 amountToReturnToLPs =   
                 finalDeltaSim.amount0() < 0? uint256(uint128(hookDeltaToPM.amount1() - finalDeltaSim.amount1())) :
                     uint256(uint128(hookDeltaToPM.amount0() - finalDeltaSim.amount0()));
-// console.log("amountToReturnToLPs : ", amountToReturnToLPs);
+            // console.log("amountToReturnToLPs : ", amountToReturnToLPs);
             
             BalanceDelta afterDonateDelta = poolManager.donate(
                 poolKey,
@@ -183,9 +172,8 @@ contract TakeProfitsHookWithSim is BaseHook, ERC1155 {
             (,int24 finalTick,,) = poolManager.getSlot0(key.toId());
             console.log("actual TICK after swap : ", finalTick);
         }
-// console.log("Currency0 to settle before settle : ",poolManager.currencyDelta(address(this), key.currency0));
-//         console.log("Currency1 to settle before settle : ",poolManager.currencyDelta(address(this), key.currency1));
-        console.log("CHECK");
+            // console.log("Currency0 to settle before settle : ",poolManager.currencyDelta(address(this), key.currency0));
+            // console.log("Currency1 to settle before settle : ",poolManager.currencyDelta(address(this), key.currency1));
         {
             BalanceDelta hookDeltaToSettle = sub(hookDeltaToPM, userDeltaToHook);
             // console.log("hookDeltaToSettle : ", hookDeltaToSettle.amount0());
@@ -210,12 +198,12 @@ contract TakeProfitsHookWithSim is BaseHook, ERC1155 {
                 :   (params.amountSpecified < 0? -userDeltaToHook.amount0() : -userDeltaToHook.amount1())
         );
         
-//         console.log("beforeSwapDelta : ", beforeSwapDelta.getSpecifiedDelta());
-//         console.log("beforeSwapDelta : ", beforeSwapDelta.getUnspecifiedDelta());
-//         console.log("token0Balance end : ", key.currency0.balanceOf(address(this)));
-// console.log("token1Balance end : ", key.currency1.balanceOf(address(this)));
-// console.log("Currency0 to settle after settle : ",poolManager.currencyDelta(address(this), key.currency0));
-//         console.log("Currency1 to settle after settle : ",poolManager.currencyDelta(address(this), key.currency1));
+        //console.log("beforeSwapDelta : ", beforeSwapDelta.getSpecifiedDelta());
+        //console.log("beforeSwapDelta : ", beforeSwapDelta.getUnspecifiedDelta());
+        //console.log("token0Balance end : ", key.currency0.balanceOf(address(this)));
+        //console.log("token1Balance end : ", key.currency1.balanceOf(address(this)));
+        //console.log("Currency0 to settle after settle : ",poolManager.currencyDelta(address(this), key.currency0));
+        //console.log("Currency1 to settle after settle : ",poolManager.currencyDelta(address(this), key.currency1));
         return (this.beforeSwap.selector, beforeSwapDelta, 0);
     }
 
@@ -362,8 +350,8 @@ contract TakeProfitsHookWithSim is BaseHook, ERC1155 {
         int24 lastTick = lastTicks[key.toId()];
         bool tryMore = true;
         int24 tick;
-        console.log("last tick : ", lastTick);
-        console.log("current tick : ", currentTick);
+        // console.log("last tick : ", lastTick);
+        // console.log("current tick : ", currentTick);
 
         // ------------
         // Case (1)
@@ -375,7 +363,7 @@ contract TakeProfitsHookWithSim is BaseHook, ERC1155 {
         // We should check if we have any orders looking to sell Token 0
         // at ticks `lastTick` to `currentTick`
         // i.e. check if we have any orders to sell ETH at the new price that ETH is at now because of the increase
-        if (currentTick > lastTick) {console.log("currentTick > lastTick");
+        if (currentTick > lastTick) {
             // Loop over all ticks from `lastTick` to `currentTick`
             // and execute orders that are looking to sell Token 0
             while(tryMore) {
@@ -402,7 +390,6 @@ contract TakeProfitsHookWithSim is BaseHook, ERC1155 {
 
                 }
             }
-            console.log("stateOverride.tick : ",stateOverride.tick);
             lastTicks[key.toId()] = tick;
             return (stateOverride, deltaSim);
         }
@@ -415,7 +402,7 @@ contract TakeProfitsHookWithSim is BaseHook, ERC1155 {
         // We should check if we have any orders looking to sell Token 1
         // at ticks `currentTick` to `lastTick`
         // i.e. check if we have any orders to buy ETH at the new price that ETH is at now because of the decrease
-        else {console.log("currentTick < lastTick");
+        else {
             while (tryMore) {
                 tryMore = false;
                 for (
@@ -435,7 +422,7 @@ contract TakeProfitsHookWithSim is BaseHook, ERC1155 {
                         currentTick = stateOverride.tick;
                     }
                 }
-            }console.log("stateOverride.tick : ",stateOverride.tick);
+            }
             lastTicks[key.toId()] = tick;
             return (stateOverride, deltaSim);
         }
@@ -465,7 +452,7 @@ contract TakeProfitsHookWithSim is BaseHook, ERC1155 {
             })
         );
 
-        // console.log("tick executed : ", tick);
+        console.log("tick executed : ", tick);
         // console.log("tick after swap sim : ", state.tick);
 
         // `inputAmount` has been deducted from this position

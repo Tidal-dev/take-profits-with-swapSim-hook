@@ -192,7 +192,7 @@ contract SwapSimTest is Test, Deployers {
             liquidity: state.liquidity
         });
 
-        (BalanceDelta result2, SwapSim.SwapState memory state2) = 
+        (, SwapSim.SwapState memory state2) = 
             manager.swapSim(stateOverride, simParams);
 
         // Conduct the swap - `afterSwap` should also execute our placed order

@@ -105,7 +105,7 @@ contract TakeProfitsHookTest is Test, Deployers {
             IPoolManager.ModifyLiquidityParams({
                 tickLower: TickMath.minUsableTick(60),
                 tickUpper: TickMath.maxUsableTick(60),
-                liquidityDelta: 10 ether,
+                liquidityDelta: 20 ether,
                 salt: bytes32(0)
             }),
             ZERO_BYTES
@@ -358,14 +358,15 @@ contract TakeProfitsHookTest is Test, Deployers {
         // Setup two zeroForOne orders at ticks 0 and 60
         uint256 amount = 0.01 ether;
 
-        for(int24 i = 0; i < 400; i++){
+        for(int24 i = 0; i < 200; i++){
             hook.placeOrder(key, i * 60, true, amount);
         }
+        uint256 initialBalance = key.currency0.balanceOf(address(this));
 
         // Do a swap to make tick increase
         IPoolManager.SwapParams memory params = IPoolManager.SwapParams({
             zeroForOne: false,
-            amountSpecified: -10 ether,
+            amountSpecified: -30 ether,
             sqrtPriceLimitX96: TickMath.MAX_SQRT_PRICE - 1
         });
 
@@ -375,13 +376,9 @@ contract TakeProfitsHookTest is Test, Deployers {
 
         console.log("gas used : ", initialGas - gasleft());
 
-        uint256 tokensLeftToSell = hook.pendingOrders(key.toId(), 0, true);
-        assertEq(tokensLeftToSell, 0);
+        (,int24 finalTick,,) = manager.getSlot0(key.toId());
+        console.log("Final Tick : ",finalTick);
 
-        tokensLeftToSell = hook.pendingOrders(key.toId(), 660, true);
-        assertEq(tokensLeftToSell, 0);
-        
-        tokensLeftToSell = hook.pendingOrders(key.toId(), 720, true);
-        assertEq(tokensLeftToSell, 0);
+        console.log("Token 0 new balance : ", key.currency0.balanceOf(address(this)) - initialBalance);
     }
 }

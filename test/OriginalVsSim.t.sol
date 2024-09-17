@@ -49,7 +49,7 @@ contract TakeProfitsHookTest is Test, Deployers {
         (token0, token1) = deployMintAndApprove2Currencies();
     }
 
-    function deploy(address hookAddress, bool deployOriginal) public returns(PoolKey memory poolKey, IHooks hook){
+    function deploy(address hookAddress, bool deployOriginal) public returns(PoolKey memory poolKey){
 
         deployCodeTo(
             "TakeProfitsHook.sol",
@@ -57,12 +57,14 @@ contract TakeProfitsHookTest is Test, Deployers {
             hookAddress
         );
 
-        hook;
+        IHooks hook;
         if(deployOriginal){
-            hook = TakeProfitsHook(hookAddress);
+            hookOriginal = TakeProfitsHook(hookAddress);
+            hook = hookOriginal;
         }
         else{
-            hook = TakeProfitsHookWithSim(hookAddress);
+            hookSim = TakeProfitsHookWithSim(hookAddress);
+            hook = hookSim;
         }
 
         // Approve our hook address to spend these tokens as well
@@ -148,7 +150,7 @@ contract TakeProfitsHookTest is Test, Deployers {
         );
         address hookAddressOriginal = address(flags);
 
-        (PoolKey memory keyOriginal, TakeProfitsHook hookOriginal) = deploy(hookAddressOriginal, true);
+        PoolKey memory keyOriginal = deploy(hookAddressOriginal, true);
 
         flags = uint160(
             Hooks.AFTER_INITIALIZE_FLAG | Hooks.BEFORE_SWAP_FLAG | Hooks.BEFORE_SWAP_RETURNS_DELTA_FLAG
@@ -161,7 +163,26 @@ contract TakeProfitsHookTest is Test, Deployers {
         uint256 amount = 0.01 ether;
 
         for(int24 i = 0; i < 500; i++){
-            hookAddressOriginal.placeOrder(keyOriginal, i * 60, true, amount);
+            hookOriginal.placeOrder(keyOriginal, i * 60, true, amount);
+            hookSim.placeOrder(keySim, i * 60, true, amount);
         }
+
+        uint256 initialGas = gasleft();
+
+        IPoolManager.SwapParams memory params = IPoolManager.SwapParams({
+            zeroForOne: false,
+            amountSpecified: -10 ether,
+            sqrtPriceLimitX96: TickMath.MAX_SQRT_PRICE - 1
+        });
+        PoolSwapTest.TestSettings memory testSettings = PoolSwapTest
+            .TestSettings({takeClaims: false, settleUsingBurn: false});
+
+        swapRouter.swap(keyOriginal, params, testSettings, ZERO_BYTES);
+
+        initialGas = initialGas - gasleft();
+        console.log("original Gas : ", initialGas);
+
+        swapRouter.swap(keySim, params, testSettings, ZERO_BYTES);
+        console.log("Sim Gas : ", initialGas - gasleft());
     }
 }

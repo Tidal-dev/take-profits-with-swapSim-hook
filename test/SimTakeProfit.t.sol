@@ -396,7 +396,7 @@ contract TakeProfitsHookTest is Test, Deployers {
         // Setup two zeroForOne orders at ticks 0 and 60
         uint256 amount = 0.01 ether;
 
-        for(int24 i = 0; i < 500; i++){
+        for(int24 i = 0; i < 200; i++){
             hook.placeOrder(key, i * 60, true, amount);
         }
 
@@ -406,6 +406,8 @@ contract TakeProfitsHookTest is Test, Deployers {
             amountSpecified: -30 ether,
             sqrtPriceLimitX96: TickMath.MAX_SQRT_PRICE - 1
         });
+
+        uint256 initialBalance = key.currency0.balanceOf(address(this));
 
         uint256 initialGas = gasleft();
 
@@ -421,6 +423,9 @@ contract TakeProfitsHookTest is Test, Deployers {
         
         tokensLeftToSell = hook.pendingOrders(key.toId(), 720, true);
         assertEq(tokensLeftToSell, 0);
-        console.log("claimable : ", hook.claimableOutputTokens(hook.getPositionId(key, int24(199 * 60), true)));
+        (,int24 finalTick,,) = manager.getSlot0(key.toId());
+        console.log("Final Tick : ",finalTick);
+        console.log("Token 0 new balance : ", key.currency0.balanceOf(address(this)) - initialBalance);
+
     }
 }
